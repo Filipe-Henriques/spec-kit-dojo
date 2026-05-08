@@ -3,7 +3,7 @@ schema_version: "1.0"
 extension:
   id: "sybilion-dojo"
   name: "Sybilion Dojo Workflow"
-  version: "1.0.0"
+  version: "1.1.0"
   description: "Sybilion corporate workflow with mandatory Dojo contract validation"
   author: "Sybilion Engineering"
   license: MIT
@@ -18,20 +18,21 @@ requires:
 
 provides:
   commands:
+    - name: speckit.sybilion-dojo.init
+      file: commands/init.md
+      description: "Apply Sybilion constitution template before constitution generation"
     - name: speckit.sybilion-dojo.contract
       file: commands/contract.md
       description: "Generate Dojo blackbox contracts from plan"
     - name: speckit.sybilion-dojo.validate
       file: commands/validate.md
       description: "Run ruff linter and Dojo tests, fix until green"
-  templates:
-    - type: "template"
-      name: "constitution-template"
-      file: "templates/constitution-template.md"
-      description: "Sybilion corporate constitution"
-      strategy: "replace"
 
 hooks:
+  before_constitution:
+    command: speckit.sybilion-dojo.init
+    optional: false
+    description: "Apply Sybilion constitution template before generation"
   after_plan:
     command: speckit.sybilion-dojo.contract
     optional: false
