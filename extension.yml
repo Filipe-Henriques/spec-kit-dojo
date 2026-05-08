@@ -18,10 +18,10 @@ requires:
 
 provides:
   commands:
-    - name: sybilion-dojo.contract
+    - name: speckit.sybilion-dojo.contract
       file: commands/contract.md
       description: "Generate Dojo blackbox contracts from plan"
-    - name: sybilion-dojo.validate
+    - name: speckit.sybilion-dojo.validate
       file: commands/validate.md
       description: "Run ruff linter and Dojo tests, fix until green"
   templates:
@@ -33,11 +33,11 @@ provides:
 
 hooks:
   after_plan:
-    command: sybilion-dojo.contract
+    command: speckit.sybilion-dojo.contract
     optional: false
     description: "Generate Dojo contracts after planning"
   after_implement:
-    command: sybilion-dojo.validate
+    command: speckit.sybilion-dojo.validate
     optional: false
     description: "Run linter and Dojo tests after implementation"
 
