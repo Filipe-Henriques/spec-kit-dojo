@@ -3,7 +3,7 @@ schema_version: "1.0"
 extension:
   id: "sybilion-dojo"
   name: "Sybilion Dojo Workflow"
-  version: "1.2.0"
+  version: "1.3.0"
   description: "Sybilion corporate workflow with mandatory Dojo contract validation"
   author: "Sybilion Engineering"
   license: MIT
@@ -12,8 +12,6 @@ requires:
   speckit_version: ">=0.8.0"
   tools:
     - name: dojo
-      required: true
-    - name: ruff
       required: true
 
 provides:
@@ -26,7 +24,7 @@ provides:
       description: "Generate Dojo blackbox contracts from plan"
     - name: speckit.sybilion-dojo.validate
       file: commands/validate.md
-      description: "Run ruff linter and Dojo tests, fix until green"
+      description: "Run the project linter and Dojo tests, fix until green"
 
 hooks:
   before_constitution:
@@ -46,4 +44,3 @@ tags:
   - "sybilion"
   - "dojo"
   - "tdd"
-  - "python"

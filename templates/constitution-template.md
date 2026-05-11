@@ -1,35 +1,160 @@
-# Constitution
+# [PROJECT_NAME] Constitution
+
+This document is binding. When other documentation conflicts with this file, this file wins. The agent MUST treat these rules as overriding any default behavior or assumptions.
 
 ## Core Principles
-- **Contract-Driven Development:** All features MUST have a Dojo contract defined before implementation begins.
-- **Test-Driven:** Code is only considered complete when it passes the Dojo blackbox tests.
-- **Single Responsibility:** Every module, class, and function must have one clear responsibility.
-- **Explicit over Implicit:** Prefer clarity over cleverness. Code should be readable without comments.
 
-## Sybilion Python Engineering Standards
+### 1. Contract-First Development
+
+Every feature MUST have a Dojo blackbox contract defined and reviewed BEFORE implementation begins. Tests are written, the contract is reviewed, tests fail against the unimplemented code, and only then is implementation begun. Code is COMPLETE only when the Dojo contract suite passes — a green local test loop without a green Dojo run is not complete.
+
+### 2. Determinism by Default
+
+Same inputs MUST produce same outputs. Any randomness MUST be explicitly seeded via a parameter with a documented default. No reliance on global RNG state, wall-clock time, or environmental conditions for behavior.
+
+### 3. Fail Fast, No Silent Coercion
+
+Invalid inputs MUST raise clear, actionable errors at the boundary. No defaulting, implicit repair, or swallowing exceptions. Error messages MUST help the caller correct the input.
+
+### 4. Small Surface, Stable Contract
+
+Keep the public API small and intentional. Internal modules may change freely; public symbols MUST NOT change without an explicit task. Prefer vertical slices end-to-end over horizontal sprawl, and single-responsibility components over coupled mega-modules.
+
+---
+
+## Engineering Standards
 
 ### Code Quality
-- **Formatter:** All code MUST be formatted with `ruff format` before committing.
-- **Linter:** All code MUST pass `ruff check` with zero errors before committing.
-- **Type Hints:** All function signatures MUST have type hints. No untyped `def` is allowed.
-- **No bare exceptions:** Never use `except Exception` or `except:` without logging the error.
 
-### Project Structure
-- **Package layout:** Use `src/` layout. Application code lives in `src/<package_name>/`.
-- **Dependencies:** Use `pyproject.toml` for dependency management. No `requirements.txt`.
-- **Environment variables:** All config MUST come from environment variables. Never hardcode secrets.
-- **Logging:** Use Python's standard `logging` module. Never use `print()` for application output.
+- All code MUST be formatted by the project's configured formatter before commit.
+- All code MUST pass the project's configured linter with zero errors before commit. Do not suppress rules without an explicit, justified inline comment.
+- Where the language supports static typing, types MUST be declared explicitly on every public function signature. Untyped public boundaries are forbidden.
+- No bare or catch-all exception handlers. If a broad catch is genuinely necessary, the caught error MUST be logged with context before re-raising or handling.
+- Use the language's standard logging facility. No raw `stdout` / `stderr` output for application events. The library MUST NOT configure global handlers or logging state on import.
+- Configuration and secrets MUST come from environment variables or a project-approved secret store. No hardcoded secrets, API keys, or credentials in source.
 
-### API & Data
-- **Validation:** All external input (API payloads, env vars) MUST be validated with `pydantic`.
-- **HTTP clients:** Use `httpx` for all HTTP calls. Never use `requests`.
-- **Database:** Use raw SQL with a connection pool. No ORMs unless explicitly approved.
+### Project Structure & Layering
+
+- The project MUST define explicit layers (e.g. `core` / domain modules / orchestration / `tools` or IO). Define them once, document them, and enforce them.
+- Layers MUST NOT depend upward. The foundational layer (contracts, types, utilities) MUST NOT depend on any other layer.
+- I/O — filesystem, network, environment access — MUST be confined to designated wrapper layers. Algorithmic / domain / `core` layers MUST be I/O-free.
+- Modules MUST be usable standalone on the core contract types AND through thin wrappers. Wrappers MUST NOT contain business or algorithmic logic.
+- No hidden global state. State flows through explicit parameters or constructors.
+- Cross-cutting concerns (serialization, logging, configuration, error types) MUST be centralized. No local re-implementations of an already-provided shared utility.
+
+### Public API Discipline
+
+- Public symbols MUST be explicitly re-exported from the project's package entry point. Anything not re-exported is internal and unstable.
+- Internal modules MUST NOT be imported by user-facing code.
+- New public symbols, or any breaking change to an existing public symbol, requires an explicit task — never as a side effect of another change.
+
+### Error Handling
+
+- All user-facing exceptions MUST derive from a single project-defined base error class.
+- Unsupported operations MUST raise the language's "not implemented" equivalent with a message that names the operation and the reason.
+- Error messages MUST be actionable: state what was wrong AND what the caller should do.
+
+### Dependencies
+
+- All runtime and development dependencies MUST be declared in the language's standard manifest. No installation outside the manifest.
+- Versions MUST be pinned wherever the manifest supports it.
+- New dependencies require explicit approval. Prefer the standard library or in-project utilities over adding a dependency.
+- Optional dependencies belong in extras / feature groups and MUST raise a clear, project-defined error when missing at runtime. Optional dependencies MUST NOT affect default behavior when absent.
+- After any dependency change, the manifest's lock / sync step MUST be run. No ad-hoc package installs.
+
+### Testing
+
+- Every new module MUST include tests.
+- Minimum coverage: core logic, edge cases (empty / minimal / extreme inputs), determinism where applicable, and leakage prevention where the domain demands it.
+- Tests SHOULD import the public API rather than internal modules.
+- Shared deterministic fixtures SHOULD be reused across tests to keep the suite low-churn.
+
+### Documentation
+
+- All public classes, functions, and methods MUST have docstrings (or the language's equivalent) describing purpose, parameters, and return values.
+- The summary line MUST be one sentence, ≤ 80 characters, describing WHAT, not HOW.
+- Do not duplicate type information already present in type hints.
+- A docstring exceeding ~10 lines for a function or ~15 lines for a class SHOULD be shortened unless verbosity is explicitly requested.
+
+### Performance
+
+- Avoid unnecessary copies of large data structures. Prefer in-place / vectorized operations where the language supports them idiomatically.
+- Document any operation with non-obvious complexity (worse than O(n) in the input size).
+- Do NOT micro-optimize unless explicitly requested. Correctness and clarity outrank speed.
+
+---
+
+## Workflow Discipline
+
+### Sources of Truth
+
+- The project MUST maintain a single authoritative location for behavioral requirements, architectural decisions, and active tasks. For spec-kit projects, per-feature specs / plans / tasks live under `specs/<branch-name>/`.
+- The agent MUST consult these documents before implementing. The agent MUST NOT invent requirements that are not stated there.
+- If something is unclear or missing, pause and propose a new task entry. Do not guess.
+
+### Execution Loop (Mandatory)
+
+After every code change, before declaring a task complete, the agent MUST run, in order:
+
+1. The project's formatter.
+2. The project's linter — fix every reported issue (do not suppress without justification).
+3. The project's type checker, if the language supports one — fix every reported issue.
+4. The project's unit test suite.
+5. `dojo ./tests/blackbox/` against the contract suite.
+6. If any step fails, fix the root cause and restart from step 1.
+7. A step that genuinely cannot be run MUST be reported, not skipped silently.
+
+### Task Discipline
+
+- Work only on the scope explicitly listed in the current task entry.
+- New scope discovered mid-task MUST become a new task entry — never improvise outside the stated scope.
+- A task is COMPLETE only when: code is written, tests are added or updated, the execution loop above is green, and the Dojo contract passes.
+
+### Review Mindset
+
+- The agent is an implementer, not an architect.
+- When uncertain, pause and ask. Do not guess. Do not invent APIs.
+- Correctness, reproducibility, and contract compliance outrank speed.
+
+### Special Files
+
+- The agent MUST respect the project's ignore lists (`.gitignore`, `.dojoignore`, and any additional ignore files the project declares). Files matched by those lists MUST NOT be read or modified unless the user explicitly asks.
+
+---
 
 ## Tooling Versions
-- **Spec-Kit:** Must be >= 0.8.0
-- **Dojo:** Must be installed via `go install github.com/elmacnifico/dojo@latest`. If the `dojo` command is not found, the agent MUST install it before running validations.
-- **Python:** Must be >= 3.11
-- **Ruff:** Must be installed via `uv tool install ruff`
 
-## Project Specific Rules
+- **Spec-Kit:** Must be >= 0.8.0.
+- **Dojo:** Must be available on the `PATH`. Install via `go install github.com/elmacnifico/dojo@latest`. If the `dojo` command is not found, the agent MUST install it before running validations.
+- **Language toolchain (formatter / linter / type checker / test runner):** declared and pinned in the project manifest. See **Project-Specific Rules** for the concrete tools and versions for this project.
+
+---
+
+## Project-Specific Rules
+
 [PROJECT_SPECIFIC_RULES]
+
+---
+
+## Governance
+
+This constitution supersedes all other project practices, conventions, and personal preferences. Where any other document, comment, or convention contradicts this constitution, this constitution wins.
+
+**Amendments.** Changes to this constitution require:
+
+1. A written proposal describing the change and its rationale.
+2. Explicit team approval (record approvers in the amendment commit).
+3. A bump of the version below, an updated `Last Amended` date, and migration notes for any rule that breaks existing behavior.
+
+**Compliance.** Constitution compliance is verified at two checkpoints:
+
+- The Dojo contract suite (`/speckit.sybilion-dojo.contract` + `/speckit.sybilion-dojo.validate`) MUST pass before any feature is considered complete.
+- Code review on pull requests MUST flag any constitution violation. Reviewers may block merges that violate this document.
+
+**Exceptions.** If a constitution rule genuinely cannot be followed for a given task, the agent MUST document the deviation inline with a justification AND open a follow-up task to either fix the deviation or amend the rule. Silent deviations are violations.
+
+[GOVERNANCE_RULES]
+
+---
+
+**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
