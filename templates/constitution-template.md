@@ -69,6 +69,22 @@ Keep the public API small and intentional. Internal modules may change freely; p
 - Tests SHOULD import the public API rather than internal modules.
 - Shared deterministic fixtures SHOULD be reused across tests to keep the suite low-churn.
 
+**Test-Driven Development at the unit level (NON-NEGOTIABLE).** This is the **inner** loop within Principle 1's contract-first cycle. Unit red-green produces the implementation that the Dojo contract suite ultimately validates. The contract suite remains the sole gate for "COMPLETE" — this rule governs **how each line is written**, not when the system is done.
+
+Cycle, in order, per behaviour: unit test written → fails for the expected reason (run and observed) → minimal implementation → test passes (run and observed) → refactor with tests green.
+
+Mandatory between RED and GREEN: the agent MUST run the failing test and observe the failure output before writing implementation. Producing a test and its implementation in the same agent turn is forbidden — collapsed RED+GREEN is a constitutional violation.
+
+Anti-patterns specific to agents:
+
+- **Test deletion or weakening to make the suite pass.** Failing tests are fixed by changing the implementation, never the test. If the test itself is wrong, verify against `spec.md` first.
+- **Self-validating circular tests.** A test generated from the same prompt as the implementation is suspect; subject it to the same scrutiny as a junior-developer-authored test.
+- **No recorded failure observation.** "I wrote a test for it" is insufficient — the agent MUST be able to cite the failing-run output that preceded the green run.
+
+Allowed exception: if a Dojo contract test is the first failing test that exercises a new behaviour, no separate unit test is required for that behaviour. The rule is "no production code without a failing **unit or contract** test that exercises it first" — not "no production code without a failing unit test". Even under this exception, the cycle still applies at the contract level: the contract test MUST be observed failing for the expected reason before implementation, and observed passing afterwards. The exception removes the *duplication*, not the *discipline*.
+
+When a Claude Code plug-in provides equivalent TDD discipline (e.g. Superpowers' `test-driven-development` skill), it satisfies this rule automatically; the rules above are the standalone enforcement.
+
 ### Documentation
 
 - All public classes, functions, and methods MUST have docstrings (or the language's equivalent) describing purpose, parameters, and return values.
