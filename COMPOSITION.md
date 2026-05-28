@@ -22,10 +22,12 @@ Install: `/plugin install superpowers@claude-plugins-official`
 2. **TDD demarcation.** The Dojo blackbox contract suite
    (`/speckit.sybilion-dojo.contract`) owns the *contract* layer. The
    Superpowers `test-driven-development` skill applies to the *unit-test* layer
-   only. Both red/green loops MUST be green for a task to be COMPLETE. They are
-   parallel disciplines, not duplicates — the contract layer asserts observable
-   behaviour from outside; the unit layer asserts implementation internals from
-   inside.
+   only. Both red/green loops MUST be green before a task can be declared
+   COMPLETE. The Dojo contract is the semantic gate (per constitution
+   Principle 1); the unit-test layer is the implementation discipline that
+   produces the green contract. They are parallel disciplines, not duplicates
+   — the contract layer asserts observable behaviour from outside; the unit
+   layer asserts implementation internals from inside.
 
 3. **Unknown validate failures — defer.** When
    `/speckit.sybilion-dojo.validate` encounters a symptom outside its Failure

@@ -69,7 +69,7 @@ Keep the public API small and intentional. Internal modules may change freely; p
 - Tests SHOULD import the public API rather than internal modules.
 - Shared deterministic fixtures SHOULD be reused across tests to keep the suite low-churn.
 
-**Test-Driven Development at the unit level (NON-NEGOTIABLE).** This is the **inner** loop within Principle 1's contract-first cycle. Unit red-green produces the implementation that the Dojo contract suite ultimately validates. The contract suite remains the sole gate for "COMPLETE" — this rule governs **how each line is written**, not when the system is done.
+**Test-Driven Development at the unit level (NON-NEGOTIABLE).** This is the **inner** loop within Principle 1's contract-first cycle. Unit red-green produces the implementation that the Dojo contract suite ultimately validates. The contract suite remains the completion gate established by Principle 1 and the Execution Loop — this rule governs **how each line is written**, not when the system is done.
 
 Cycle, in order, per behaviour: unit test written → fails for the expected reason (run and observed) → minimal implementation → test passes (run and observed) → refactor with tests green.
 

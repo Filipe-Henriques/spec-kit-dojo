@@ -8,10 +8,12 @@ Este repositório **é a extensão** — não é uma aplicação. É consumido p
 
 - **Constitution** corporativa Sybilion (princípios, engineering standards e workflow discipline) — language-agnostic, aplica-se a qualquer projecto.
 - Comando `speckit.sybilion-dojo.init` — copia a constitution template para `.specify/memory/constitution.md` antes de a constitution ser gerada.
+- Comando `speckit.sybilion-dojo.frame` — clarificação Socrática do intent antes de `/speckit.specify` redigir a spec (defere para o skill `brainstorming` do Superpowers quando presente).
 - Comando `speckit.sybilion-dojo.contract` — gera contratos blackbox Dojo a partir do `spec.md` e `plan.md`, incluindo `tests/blackbox/dojo.yaml`, `COVERAGE.md` e fixtures.
-- Comando `speckit.sybilion-dojo.validate` — corre o formatter, o linter e os testes Dojo do projecto até passarem.
+- Comando `speckit.sybilion-dojo.validate` — corre o formatter, linter, type checker, unit tests e testes Dojo até passarem (Execution Loop completa).
 - **Hooks** que ligam estes comandos ao ciclo de vida do Spec-Kit:
   - `before_constitution` → init
+  - `before_specify` → frame (optional)
   - `after_plan` → contract
   - `after_implement` → validate
 
@@ -20,8 +22,10 @@ Este repositório **é a extensão** — não é uma aplicação. É consumido p
 ```
 .
 ├── extension.yml                          # Manifesto da extensão
+├── COMPOSITION.md                         # Regras de composição com plug-ins companheiros (Superpowers)
 ├── commands/
 │   ├── init.md                            # /speckit.sybilion-dojo.init
+│   ├── frame.md                           # /speckit.sybilion-dojo.frame
 │   ├── contract.md                        # /speckit.sybilion-dojo.contract
 │   └── validate.md                        # /speckit.sybilion-dojo.validate
 └── templates/
@@ -64,7 +68,7 @@ Verificar:
 specify extension list   # deve listar 'sybilion-dojo'
 ```
 
-A partir daqui, os comandos `speckit.sybilion-dojo.init`, `speckit.sybilion-dojo.contract` e `speckit.sybilion-dojo.validate` ficam disponíveis no projecto destino, e os hooks disparam automaticamente nos pontos do ciclo do Spec-Kit definidos em [extension.yml](extension.yml).
+A partir daqui, os comandos `speckit.sybilion-dojo.init`, `speckit.sybilion-dojo.frame`, `speckit.sybilion-dojo.contract` e `speckit.sybilion-dojo.validate` ficam disponíveis no projecto destino, e os hooks disparam automaticamente nos pontos do ciclo do Spec-Kit definidos em [extension.yml](extension.yml).
 
 ## Desenvolver a extensão
 
