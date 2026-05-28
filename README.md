@@ -10,7 +10,7 @@ Este repositório **é a extensão** — não é uma aplicação. É consumido p
 - Comando `speckit.sybilion-dojo.init` — copia a constitution template para `.specify/memory/constitution.md` antes de a constitution ser gerada.
 - Comando `speckit.sybilion-dojo.frame` — clarificação Socrática do intent antes de `/speckit.specify` redigir a spec (defere para o skill `brainstorming` do Superpowers quando presente).
 - Comando `speckit.sybilion-dojo.contract` — gera contratos blackbox Dojo a partir do `spec.md` e `plan.md`, incluindo `tests/blackbox/dojo.yaml`, `COVERAGE.md` e fixtures.
-- Comando `speckit.sybilion-dojo.validate` — corre o formatter, linter, type checker, unit tests e testes Dojo até passarem (Execution Loop completa).
+- Comando `speckit.sybilion-dojo.validate` — corre o Execution Loop (formatter, linter, type checker, unit tests, Dojo) e a Completion Verification gate que valida FR/SC → teste verde e detecta drift entre `spec.md` e `COVERAGE.md`.
 - **Hooks** que ligam estes comandos ao ciclo de vida do Spec-Kit:
   - `before_constitution` → init
   - `before_specify` → frame (optional)
@@ -45,6 +45,7 @@ Compõe com o plug-in [Superpowers](https://github.com/obra/superpowers) para Cl
 - O skill `brainstorming` auto-activa-se durante `/speckit.sybilion-dojo.frame` (hook `before_specify`), reforçando o questionamento Socrático.
 - O skill `test-driven-development` aplica-se ao loop unit-test em paralelo com o contrato Dojo blackbox (que continua a ser da exclusiva responsabilidade do `/speckit.sybilion-dojo.contract`).
 - O skill `systematic-debugging` auto-activa-se quando `/speckit.sybilion-dojo.validate` encontra um sintoma fora da tabela "Failure Modes".
+- O skill `verification-before-completion` auto-activa-se na Completion Verification gate do `/speckit.sybilion-dojo.validate`, exigindo evidência fresca da cross-check COVERAGE→dojo antes de qualquer claim de COMPLETE.
 
 Sem o plug-in, as mesmas disciplinas continuam a ser aplicadas pelos hooks e comandos desta extensão — a composição é optimização, não dependência.
 

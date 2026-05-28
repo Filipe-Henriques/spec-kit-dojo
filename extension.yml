@@ -3,7 +3,7 @@ schema_version: "1.0"
 extension:
   id: "sybilion-dojo"
   name: "Sybilion Dojo Workflow"
-  version: "1.6.1"
+  version: "1.6.2"
   description: "Sybilion corporate workflow with mandatory Dojo contract validation"
   author: "Sybilion Engineering"
   license: MIT
