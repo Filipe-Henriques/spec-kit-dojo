@@ -35,6 +35,15 @@ Install: `/plugin install superpowers@claude-plugins-official`
    skill if present, otherwise runs the 4-phase root-cause process inline
    (reproduce → isolate → identify root cause → fix).
 
+4. **Completion verification — defer.** When the
+   `verification-before-completion` skill is present in the session, the
+   `validate` command's Completion Verification gate defers to it. The skill
+   enforces the Iron Law "no completion claims without fresh verification
+   evidence" — for us, the COVERAGE→dojo cross-check is the command that
+   proves the claim. The standalone inline procedure (FR/SC → green test
+   mapping + bidirectional drift between `spec.md` and `COVERAGE.md`) is the
+   equivalent enforcement when the skill is absent.
+
 ### Known Limitations
 
 - **`before_specify` is `optional: true`.** Spec-Kit
