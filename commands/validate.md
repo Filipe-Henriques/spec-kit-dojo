@@ -38,8 +38,36 @@ This sequence MUST match the **Execution Loop** in the project constitution. Bot
 6. If any step fails, diagnose via the **Failure Modes** table below.
 7. Repeat from step 1 until formatter, linter, type checker, unit tests, and `dojo` all pass with zero failures.
 8. A step that genuinely cannot be run (no type checker available for the language; no unit test suite configured yet) MUST be reported explicitly to the user, not silently skipped.
+9. Once steps 1–5 are all green, run the **Completion Verification** gate (see section below). The task is COMPLETE only when both the Execution Loop is green **and** the verification gate passes.
 
 **Do not weaken the contract suite or the unit tests to make failures disappear.** If a test seems wrong, verify against `spec.md` first — the implementation is usually the side that needs to change. If a test is genuinely incorrect (fixture does not match the spec, unit test asserts against a stale interface), fix the test and note the divergence to the user.
+
+## Completion Verification
+
+After the Execution Loop reaches green (steps 1–5 passing), this gate runs **once** to verify FR/SC traceability before the task is declared COMPLETE. Dojo green proves the contract suite passes; this gate proves the contract suite actually covers every requirement in the spec.
+
+### Detect Superpowers — defer if present
+
+Check the available skills in your session (system reminder / skill index) for the Superpowers `verification-before-completion` skill. If present:
+
+1. Announce: "Superpowers `verification-before-completion` will handle the gate — standing down."
+2. Invoke it through its normal trigger context (the agent is about to claim completion). Superpowers will demand fresh verification evidence — the COVERAGE→dojo cross-check is the command that proves the claim.
+
+If absent, run the inline procedure below.
+
+### Inline procedure (standalone)
+
+Two checks. Both MUST pass before the task is COMPLETE.
+
+**1. FR/SC → green test mapping.** Parse `tests/blackbox/COVERAGE.md`. From the coverage matrix (§7.C) and the pre-flight worksheets (§7.A), extract every non-`(skip)` row mapping `FR-*` / `SC-*` to one or more test names. For each row, run `dojo --format json ./tests/blackbox/` and confirm the mapped test exists in the result, is not skipped, and is green. Emit a structured failure list naming each FR/SC whose mapped test is missing, renamed, skipped, or red.
+
+**2. Bidirectional drift check.** Scan `spec.md` for `FR-*` / `SC-*` identifiers and diff against the Source column of COVERAGE.md. Flag identifiers present in `spec.md` but missing from COVERAGE.md (accidental deletion during refactor), and identifiers present in COVERAGE.md but absent from `spec.md` (stale rows pointing at deleted requirements). On drift, re-run `/speckit.sybilion-dojo.contract` to regenerate COVERAGE.md, then re-run the Execution Loop, then re-run this verification.
+
+### Anti-patterns specific to agents
+
+- **Treating "all dojo tests green" as sufficient.** Dojo green is necessary, not sufficient. A test can be silently disabled, accidentally satisfied by unrelated code, or renamed out of the matrix.
+- **Declaring COMPLETE before running the gate fresh.** "I already verified this earlier" is not fresh evidence. The gate runs once per completion claim, not once per session.
+- **Patching COVERAGE.md to make the drift check pass.** If `spec.md` mandates an FR the matrix does not have, add the test — do not delete the FR from the spec. Verify against the spec before changing it.
 
 ## Failure Modes
 
