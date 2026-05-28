@@ -25,22 +25,29 @@ Verify these artifacts before running any tool. Apply mechanical fixes immediate
 
 ## Instructions
 
+This sequence MUST match the **Execution Loop** in the project constitution. Both the contract layer (Dojo blackbox) and the implementation layer (unit tests, type checks) MUST be green before the task is considered complete.
+
 1. Run the project's configured formatter (as declared in the manifest — `pyproject.toml`, `package.json`, `go.mod`, `Cargo.toml`, etc.).
-2. Run the project's configured linter.
-3. If the linter fails, fix every reported issue immediately. Do not suppress rules without an explicit, justified inline comment.
-4. Run the Dojo tests: `dojo ./tests/blackbox/`
+2. Run the project's configured linter. Fix every reported issue immediately. Do not suppress rules without an explicit, justified inline comment.
+3. Run the project's configured type checker, if the language supports one. Fix every reported issue immediately. Do not silence type errors with broad `Any` / `# type: ignore` / `as any` without an inline justification per the constitution.
+4. Run the project's unit test suite. Fix every failing test by fixing the root cause in the implementation; never weaken a test to make it pass.
+5. Run the Dojo blackbox suite: `dojo ./tests/blackbox/`
    - The suite directory is `tests/blackbox/` (where `dojo.yaml` lives).
    - For verbose request/response tracing: `dojo --trace ./tests/blackbox/`
    - For machine-readable output: `dojo --format json ./tests/blackbox/`
-5. If Dojo fails, diagnose via the **Failure Modes** table below.
-6. Repeat from step 2 until both the project linter and `dojo` pass with zero failures.
+6. If any step fails, diagnose via the **Failure Modes** table below.
+7. Repeat from step 1 until formatter, linter, type checker, unit tests, and `dojo` all pass with zero failures.
+8. A step that genuinely cannot be run (no type checker available for the language; no unit test suite configured yet) MUST be reported explicitly to the user, not silently skipped.
 
-**Do not weaken the contract suite to make failures disappear.** If a test seems wrong, verify against `spec.md` first — the implementation is usually the side that needs to change. If a test is genuinely incorrect (fixture doesn't match the spec), fix the fixture and note the divergence to the user.
+**Do not weaken the contract suite or the unit tests to make failures disappear.** If a test seems wrong, verify against `spec.md` first — the implementation is usually the side that needs to change. If a test is genuinely incorrect (fixture does not match the spec, unit test asserts against a stale interface), fix the test and note the divergence to the user.
 
 ## Failure Modes
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
+| Type checker errors | Missing or wrong type annotations, or implementation type mismatch | Fix the implementation or narrow the annotation. Do not silence with broad `Any` / `# type: ignore` / `as any` without an inline justification per the constitution. |
+| Unit test failures | Implementation breaks an invariant the unit test asserts | Fix the implementation. If the test itself is wrong, verify against `spec.md` before changing it — the implementation is usually the side that needs to change. |
+| Required step has no tool configured (no type checker, no unit test runner) | The project's manifest does not declare the tool the constitution requires | Report explicitly which step is being skipped and why. Open a follow-up task to add the missing tool, or document the absence in **Project-Specific Rules** of the constitution. Never silently treat a missing tool as a passing step. |
 | `Suite 'blackbox' not found in workspace 'tests'` | `tests/blackbox/dojo.yaml` missing | Create per Pre-flight #1. |
 | `API '<name>' is not defined` | A `.plan` references an API not declared in `apis:`, or references a non-Postgres database | Add the API to `dojo.yaml` (with `mode`) or remove the offending `Expect` line. If the reference is to SQLite/MySQL/Mongo/Redis/etc., the `Expect` is fundamentally invalid — replace with HTTP follow-up checks. |
 | `Expect` timed out — for a call that happens at runtime | SUT is not making the expected outbound call | Find the missing call in the SUT and add it. Verify the SUT reads the upstream URL from the `API_<NAME>_URL` env var Dojo injects, not from a hard-coded URL. |
