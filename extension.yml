@@ -3,7 +3,7 @@ schema_version: "1.0"
 extension:
   id: "sybilion-dojo"
   name: "Sybilion Dojo Workflow"
-  version: "1.3.0"
+  version: "1.4.0"
   description: "Sybilion corporate workflow with mandatory Dojo contract validation"
   author: "Sybilion Engineering"
   license: MIT
@@ -19,6 +19,9 @@ provides:
     - name: speckit.sybilion-dojo.init
       file: commands/init.md
       description: "Apply Sybilion constitution template before constitution generation"
+    - name: speckit.sybilion-dojo.frame
+      file: commands/frame.md
+      description: "Socratic framing of user intent before spec drafting"
     - name: speckit.sybilion-dojo.contract
       file: commands/contract.md
       description: "Generate Dojo blackbox contracts from plan"
@@ -31,6 +34,10 @@ hooks:
     command: speckit.sybilion-dojo.init
     optional: false
     description: "Apply Sybilion constitution template before generation"
+  before_specify:
+    command: speckit.sybilion-dojo.frame
+    optional: true
+    description: "Frame the problem (Socratic) before spec drafting"
   after_plan:
     command: speckit.sybilion-dojo.contract
     optional: false

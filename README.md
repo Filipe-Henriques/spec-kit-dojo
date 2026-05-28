@@ -34,6 +34,18 @@ Este repositório **é a extensão** — não é uma aplicação. É consumido p
 - `dojo` disponível no `PATH` (`go install github.com/elmacnifico/dojo@latest`) — necessário em runtime para o comando de validação.
 - O projecto destino traz o seu próprio toolchain (formatter, linter, type checker, test runner) declarado no respectivo manifesto. A extensão é language-agnostic.
 
+## Compatibilidade
+
+Compõe com o plug-in [Superpowers](https://github.com/obra/superpowers) para Claude Code (`/plugin install superpowers@claude-plugins-official`). Quando instalado:
+
+- O skill `brainstorming` auto-activa-se durante `/speckit.sybilion-dojo.frame` (hook `before_specify`), reforçando o questionamento Socrático.
+- O skill `test-driven-development` aplica-se ao loop unit-test em paralelo com o contrato Dojo blackbox (que continua a ser da exclusiva responsabilidade do `/speckit.sybilion-dojo.contract`).
+- O skill `systematic-debugging` auto-activa-se quando `/speckit.sybilion-dojo.validate` encontra um sintoma fora da tabela "Failure Modes".
+
+Sem o plug-in, as mesmas disciplinas continuam a ser aplicadas pelos hooks e comandos desta extensão — a composição é optimização, não dependência.
+
+Detalhes técnicos da composição (regras, defer, limitações conhecidas) em [COMPOSITION.md](COMPOSITION.md).
+
 ## Instalação no repositório destino
 
 A partir do repositório onde se quer aplicar a extensão:
