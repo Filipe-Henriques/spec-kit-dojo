@@ -23,6 +23,74 @@ Verify these artifacts before running any tool. Apply mechanical fixes immediate
 
 6. **Every test using `Evaluate Response` has an `eval.md`.** For each `.plan` containing `Evaluate Response`, confirm that either `tests/blackbox/eval.md` (suite-wide rules) or the test's own directory contains an `eval.md`. Without it, Dojo cannot grade the SUT's outbound payload.
 
+7. **Every new unit test on this branch has captured red-evidence.** This pre-flight enforces the constitution's Testing §TDD discipline ("the agent MUST be able to cite the failing-run output that preceded the green run") as a checkable artifact.
+
+   *Defer-to-Superpowers.* If the Superpowers `test-driven-development` skill is present in this session, that skill enforces red-then-green at write time and produces its own evidence. Skip this pre-flight and note the deferral.
+
+   *Inline check (standalone).* Identify unit test files added on this branch:
+
+   ```bash
+   BASE=$(git merge-base HEAD origin/main 2>/dev/null \
+        || git merge-base HEAD main 2>/dev/null \
+        || git merge-base HEAD master)
+   git diff --diff-filter=A --name-only "$BASE"...HEAD
+   ```
+
+   From the listed paths, keep only **unit test files** under the project's test runner convention (consult the project manifest):
+
+   | Language / runner | Test file pattern |
+   |---|---|
+   | Python (pytest, unittest) | `**/test_*.py`, `**/*_test.py` |
+   | JS / TS (jest, vitest, mocha) | `**/*.{test,spec}.{js,jsx,ts,tsx}`, `**/__tests__/**/*.{js,jsx,ts,tsx}` |
+   | Go | `**/*_test.go` |
+   | Rust | `**/tests/**/*.rs` (inline `#[cfg(test)]` blocks are scoped to their host source file) |
+   | Java / Kotlin (JUnit, Kotest) | `**/src/test/**/*.{java,kt}`, `**/*{Test,Tests,Spec}.{java,kt}` |
+   | Ruby (RSpec, Minitest) | `**/spec/**/*.rb`, `**/test/**/*_test.rb` |
+   | Other | Fall back to the runner's CLI discovery (`pytest --collect-only -q`, `jest --listTests`, `go test -list '.*' ./...`, etc.) |
+
+   *Blackbox tests under `tests/blackbox/` are NOT unit tests* and are excluded — they are owned by the Dojo contract layer (pre-flights #1–#6).
+
+   For every kept test file, a matching evidence file MUST exist at:
+
+   ```
+   tests/unit/.red-evidence/<encoded-path>.md
+   ```
+
+   `<encoded-path>` is the test file's path relative to the repo root, with `/` replaced by `__` and the extension stripped. Examples:
+
+   - `tests/unit/test_validators.py` → `tests/unit/.red-evidence/tests__unit__test_validators.md`
+   - `pkg/foo/foo_test.go` → `tests/unit/.red-evidence/pkg__foo__foo_test.md`
+   - `src/utils/strings.test.ts` → `tests/unit/.red-evidence/src__utils__strings.test.md`
+
+   The evidence file MUST contain at least one block per test function defined in the file, with this shape:
+
+   ```markdown
+   ## <test_function_name>
+
+   - Command: `<exact shell command that was run>`
+   - Captured: <ISO 8601 timestamp>
+   - Exit code: <non-zero integer>
+
+   ```
+   <captured stderr/stdout including the assertion error and traceback>
+   ```
+   ```
+
+   The `tests/unit/.red-evidence/` directory MUST be committed to the repository (it is testing evidence, not build output). If the project's `.gitignore` excludes it, remove the exclusion before validation can pass.
+
+   If any discovered unit test file is missing its evidence file, or any test function in the file lacks a block, validation STOPS. The agent MUST recover the evidence before resuming:
+
+   1. Identify the unit (function / method / struct method) under test in the matching implementation file.
+   2. Temporarily revert the body of that unit to its pre-implementation state — typically a language-appropriate not-implemented placeholder (`raise NotImplementedError(...)` in Python, `throw new Error(...)` in JS/TS, `panic("not implemented")` in Go, `unimplemented!()` in Rust, `throw UnsupportedOperationException(...)` in Kotlin, etc.).
+   3. Run the offending test in isolation with the project's test runner; capture stdout + stderr + exit code.
+   4. Write the captured output to `tests/unit/.red-evidence/<encoded-path>.md` in the format above.
+   5. Restore the implementation. Re-run the test to confirm green.
+   6. Re-run validation from pre-flight #1.
+
+   Forging the evidence file from memory is a constitutional violation and is detectable: the captured traceback contains real line numbers, file paths, runner-specific framing, and a real exit code that must match a real failed run. Do not fabricate.
+
+   *Skip-with-justification.* If a unit-test file genuinely cannot be red-then-greened in isolation (e.g. a test that exercises a pure import-time constant), record the file path and reason in `tests/unit/.red-evidence/SKIPS.md`, one line per skip. The agent MUST cite each skip when reporting validation status.
+
 ## Instructions
 
 This sequence MUST match the **Execution Loop** in the project constitution. Both the contract layer (Dojo blackbox) and the implementation layer (unit tests, type checks) MUST be green before the task is considered complete.
@@ -76,6 +144,8 @@ Two checks. Both MUST pass before the task is COMPLETE.
 | Type checker errors | Missing or wrong type annotations, or implementation type mismatch | Fix the implementation or narrow the annotation. Do not silence with broad `Any` / `# type: ignore` / `as any` without an inline justification per the constitution. |
 | Unit test failures | Implementation breaks an invariant the unit test asserts | Fix the implementation. If the test itself is wrong, verify against `spec.md` before changing it — the implementation is usually the side that needs to change. |
 | Required step has no tool configured (no type checker, no unit test runner) | The project's manifest does not declare the tool the constitution requires | Report explicitly which step is being skipped and why. Open a follow-up task to add the missing tool, or document the absence in **Project-Specific Rules** of the constitution. Never silently treat a missing tool as a passing step. |
+| New unit test file has no entry under `tests/unit/.red-evidence/` | The agent skipped the RED phase (constitutional violation per Testing §TDD) or wrote test + implementation in the same turn | Apply the inline recovery procedure in Pre-flight #7 (revert the implementation, run the test, capture the failure to evidence file, restore implementation). Report the breach to the user. Do NOT proceed to green without captured evidence. |
+| Red-evidence file exists but a test function block is missing | A new test function was added without the RED phase being observed | Same recovery as above, scoped to the missing test function. Append the new block to the existing evidence file. |
 | `Suite 'blackbox' not found in workspace 'tests'` | `tests/blackbox/dojo.yaml` missing | Create per Pre-flight #1. |
 | `API '<name>' is not defined` | A `.plan` references an API not declared in `apis:`, or references a non-Postgres database | Add the API to `dojo.yaml` (with `mode`) or remove the offending `Expect` line. If the reference is to SQLite/MySQL/Mongo/Redis/etc., the `Expect` is fundamentally invalid — replace with HTTP follow-up checks. |
 | `Expect` timed out — for a call that happens at runtime | SUT is not making the expected outbound call | Find the missing call in the SUT and add it. Verify the SUT reads the upstream URL from the `API_<NAME>_URL` env var Dojo injects, not from a hard-coded URL. |

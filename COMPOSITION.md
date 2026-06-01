@@ -29,6 +29,18 @@ Install: `/plugin install superpowers@claude-plugins-official`
    — the contract layer asserts observable behaviour from outside; the unit
    layer asserts implementation internals from inside.
 
+   *Red-evidence capture — defer.* When the `test-driven-development` skill is
+   present, `validate` pre-flight #7 stands down: the skill enforces red-then-
+   green at write time and produces its own evidence. When the skill is
+   absent, the inline standalone enforcement applies — for every unit test
+   file added on the branch (discovered via the project's test runner
+   convention, not a single hard-coded path), an evidence file MUST exist at
+   `tests/unit/.red-evidence/<encoded-path>.md` (the test file's path with
+   `/` → `__` and extension stripped) with one captured-failure block per
+   test function (exact command, ISO 8601 timestamp, non-zero exit code,
+   captured stderr/stdout). The `.red-evidence/` directory is testing
+   evidence and MUST be committed. Without it, validation fails closed.
+
 3. **Unknown validate failures — defer.** When
    `/speckit.sybilion-dojo.validate` encounters a symptom outside its Failure
    Modes table, the tail row defers to the Superpowers `systematic-debugging`
